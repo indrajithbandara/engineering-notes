@@ -1,0 +1,485 @@
+Что такое ADB (Android Debug Bridge).
+
+(На примере телефона HTC, однако применима для всех Android-устройств, где данный функционал не был намеренно заблокирован производителем)
+
+Здесь и далее: PC - ПК, компьютер к которому подключено устройство, HTC ( или другой телефон) - устройство с которым мы будем работать.
+
+ADB - консольное приложение для PC, с помощью которого производится отладка Android устройств, в том числе и эмуляторов.
+Работает по принципу клиент-сервер. При первом запуске ADB с любой командой создается сервер в виде системной службы (демона), которая будет прослушивать все команды, посылаемые на порт 5037.
+
+ADB позволяет:
+
+    Посмотреть какие устройства подключены и могут работать с ADB.
+    Просматривать логи HTC.
+    Копировать файлы с/на HTC.
+    Устанавливать/Удалять приложения на HTC.
+    Удалять (очищать) раздел data на HTC
+    Прошивать (перезаписывать) раздел data на HTC.
+    Осуществлять различные скрипты управления HTC.
+    Управлять некоторыми сетевыми параметрами HTC.
+
+
+
+
+Проверить работает ли служба можно в Диспетчере задач, остановить службу можно там же.
+Поставляется ADB в комплекте инструментария разработчика SDK (включает в себя эмулятор, в связи с чем очень много весит!). Я рекомендую скачать Только сам ADB отдельно
+Распаковываем архив (рекомендуется распаковывать в корень диска или в другую папку, не содержащую русских букв в пути, ). Например: c:\adb\ или a:\adb\
+
+В итоге должна получиться папка в корне диска с содержимым:
+#:\adb\adb.exe - непосредственно сам ADB, с которым будем работать.
+#:\adb\AdbWinApi.dll - библиотека для работы ADB.
+#:\adb\AdbWinUsbApi.dll - библиотека для работы ADB.
+#:\adb\fastboot.exe - управление устройством переведенным в режим fastboot.
+
+Как пользоваться ADB.
+
+
+
+Так как ADB является консольным приложением, работать из Windows с ним не очень комфортно.
+
+Есть несколько способов работы с консолью.
+Например, с помощью cmd.exe (Обработчика команд Windows).
+Запускается любым из следующих способов:
+1. Пуск -> Выполнить -> сmd -> Ввод (Enter).
+2. Сочетанием клавиш WIN+R -> сmd -> Ввод (Enter).
+3. В папке Windows\System32 находим файл cmd.exe и запускаем его.
+
+Попадаем в обработчик.
+
+Переходим в каталог ADB командой: cd c:\adb\.
+
+Далее работаем посредством команд ADB. Список команд расположен ниже.
+
+Настройки соединения, устройства. Драйверы.
+
+
+Настраиваем телефон
+Для этого в телефон->настройки->приложения->разработка помечаем Отладка USB.
+При подключении USB-кабеля выбираем Только зарядка.
+
+Проверяем соединение на компьютере.
+Создаем в распакованной папке adb файл devices.cmd (проверяем что .cmd это расширение файла а не его имя) и пишем туда:
+echo off
+adb devices
+pause
+
+Запускаем созданный файл. Если все сделано правильно, будут видны строки:
+D:\adb>devices.cmd
+adb devices
+List of devices attached
+HT16GV402012 device
+D:\adb>pause
+Для продолжения нажмите любую клавишу . . .
+
+
+Если неправильно, то в списке присоединенных устройств (List of devices attached) будет пусто.
+
+Команды ADB и FastBoot.
+
+Команды ADB
+
+скопировать блок (задаем блок и выходящие имя)
+adb shell su -c dd if=/dev/block/mmcblk0p9 of=/sdcard/factoryfs.img bs=4096
+
+
+узнать какие блоки то в общем есть
+adb shell cat /proc/partitions
+
+
+разблокировать от графического ключа на блокировке (после команды ввести любой жест)
+adb shell rm /data/system/gesture.key
+
+
+adb -d Команда посылается только на устройство подключенное через USB.
+Внимание: Выдаст ошибку, если подключено больше одного устройства.
+
+adb -e Команда посылается на устройство в эмуляторе.
+Внимание: Выдаст ошибку, если подключено больше одного эмулятора.
+
+adb -s <серийный_номер_устройства> Команда посылается на устройство с указанным серийным номером:
+
+adb -p <имя устройства или путь> Команда посылается на устройство с указанным именем:
+Если ключ -p не указан, используется значение переменной ANDROID_PRODUCT_OUT.
+
+adb devices Список всех подсоединенных устройств.
+
+adb connect <хост>[:<порт>] Подсоединиться к HTC хосту по протококу TCP/IP через порт 5555 (по умолчанию, если не задан).
+
+adb disconnect [<хост>[:<порт>]] Отсоединиться от HTC подключенного через TCP/IP порт 5555 (по умолчанию, если не задан).
+Если не задан ни один параметр, отключиться от всех активных соединений.
+
+adb push <путь на PC> <путь на HTC> Копировать файл/папку PC->HTC.
+
+adb pull <путь на HTC> [<путь на PC>] Копировать файл/папку HTC->PC.
+
+adb sync [<каталог>] Копировать PC->HTC только новые файлы.
+Ключи:
+-l Не копировать, только создать список.
+
+adb shell Запуск упрощенного unix shell.
+
+adb shell <команда из списка shell> Команда посылается через shell
+Пример: adb shell rm -r /system/sd/app Удаление приложений, установленных на карту памяти.
+Пример: adb shell rm -r /system/sd/app-private Удаление приложений, установленных на карту памяти в раздел private.
+Пример: adb shell cat /proc/mtd Выдаст информацию о разделах внутренней памяти HTC.
+Выдаст что-то вроде:
+dev: size erasesize name
+mtd0: 000a0000 00020000 "misc"
+mtd1: 00420000 00020000 "recovery"
+mtd2: 002c0000 00020000 "boot"
+mtd3: 0fa00000 00020000 "system"
+mtd4: 02800000 00020000 "cache"
+mtd5: 0af20000 00020000 "userdata"
+
+Пример: adb shell df Выдаст информацию о свободных ресурсах в разделах памяти HTC.
+Выдаст что-то вроде:
+Filesystem 1K-blocks Used Available Use% Mounted on
+tmpfs 160664 0 160664 0% /dev
+/dev/block/mtdblock4 40960 1292 39668 3% /cache
+/dev/block/mtdblock3 256000 146888 109112 57% /system
+/dev/block/mtdblock5 179328 125728 53600 70% /data
+/dev/block/mmcblk0p1 15521280 10056880 5464400 65% /sdcard
+
+adb emu <команда> Послать команду в консоль эмулятора
+Пример:
+adb shell mount -o rw /dev/block/mtdblock3 /system
+adb shell mount -o rw /dev/block/mtdblock5 /data
+Монтировать разделы /system и /data в режиме ClockworkMod recovery.
+
+adb install [-l] [-r] [-s] <название_приложения.apk> Послать приложение на HTC и установить его.
+Пример: adb install c:/adb/app/autostarts.apk Установить файл autostarts.apk лежащий в папке /adb/app/ на диске с:
+Ключи:
+-l Блокировка приложения
+-r Переустановить приложение, с сохранением данных
+-s Установить приложение на карту памяти
+
+adb uninstall [-k] <название_приложения.apk> Удаление приложения с устройства.
+Ключи:
+-k Не удалять сохраненные данные приложения и пользователя.
+
+adb wait-for-device Ждать подключения устройства.
+
+adb start-server Запустить службу/демон.
+
+adb kill-server Остановить службу/демон.
+
+adb get-state Получить статус HTC:
+offline Выключен.
+bootloader В режиме начальной загрузки.
+device В режиме работы.
+
+adb get-serialno Получить серийный номер HTC.
+
+adb status-window Непрерывный опрос состояния HTC.
+
+adb remount Перемонтировать HTC для записи. Требуется для работы скриптов, которые изменяют данные на HTC.
+
+adb reboot bootloader Перезагрузка HTC в режим bootloader.
+
+adb reboot recovery Перезагрузка HTC в режим recovery.
+
+adb root Перезапуск демона с правами root
+
+adb usb Перезапуск демона, прослушивающего USB.
+
+adb tcpip <порт> Перезапуск демона, прослушивающего порт TCP.
+
+adb ppp <tty> [параметры] Запуск службы через USB.
+Note: you should not automatically start a PPP connection. <tty> refers to the tty for PPP stream. Eg. dev:/dev/omap_csmi_tty1
+Параметры:
+defaultroute debug dump local notty usepeerdns
+
+Отладка:
+
+adb logcat [<Ключи>] [<фильтр>] Посмотреть логи с отладочной информацией HTC:
+
+Команду logcat можно использовать с машины разработки
+$ adb logcat
+или из удаленного shell
+# logcat Каждое сообщение лога в Android имеет тэг и приоритет
+Тэг – это строка указывающая компонент системы, от которого принято сообщение (например: View для системы view)
+Приоритет – имеет одно из нижеследующих значений (в порядке от меньшего к большему):
+V - Verbose (Низший приоритет).
+D - Debug
+I - Info
+W - Warning
+E - Error
+F - Fatal
+S - Silent (Наивысший приоритет, при котором ничего не выводится).
+
+Получить список тэгов, используемых в системе, вместе с их приоритетами можно запустив logcat. В первых двух столбцах каждого из выведенных сообщений будут указаны <приоритет>/<тэг>.
+Пример выводимого logcat сообщения:
+I/ActivityManager( 585): Starting activity: Intent { action=android.intent.action...}
+
+Для уменьшения вывода лога до приемлемого уровня нужно использовать выражения фильтра. Выражения фильтра позволяют указать системе нужные комбинации <тэг> и <приоритет>, остальные сообщения система не выводит.
+Выражения фильтра имеют следующий формат <тэг>:<приоритет> ..., где <тэг> указывает нужный тэг, <приоритет> указывает минимальный уровень приоритета для выбранного тэга. Сообщения с выбранным тэгом и приоритетом на уровне или выше указанного записываются в лог. Можно использовать любое количество пар <тэг>:<приоритет> в одном выражении фильтра. Для разделения пар <тэг>:<приоритет> используется пробел.
+
+Пример ниже выводит в лог все сообщения с тэгом "ActivityManager" с приоритетом "Info" или выше, и сообщения с тэгом "MyApp" и приоритетом "Debug" или выше:
+adb logcat ActivityManager:I MyApp:D *:S
+Последний элемент в выражении фильтра *:S устанавливает приоритет "silent" для всех остальных тэгов, тем самым обеспечивая вывод сообщений только для "View" и "MyApp". Использование *:S – это отличный способ для вывода в лог только явно указанных фильтров (т.е. в выражении фильтра указывается "белый список" сообщений, а *:S отправляет все остальное в "черный список").
+
+При помощи следующего выражения фильтра отображаются все сообщения с приоритетом "warning" или выше для всех тэгов:
+adb logcat *:W
+
+Если logcat запускается на машине разработчика (не через удаленный adb shell), можно также установить значение выражения фильтра по умолчанию задав переменную окружения ANDROID_LOG_TAGS:
+export ANDROID_LOG_TAGS="ActivityManager:I MyApp:D *:S"
+
+Следует обратить внимание что задав переменную окружения ANDROID_LOG_TAGS она не будет работать в эмуляторе/устройстве, если вы будете использовать logcat в удаленном shell или используя adb shell logcat.
+Вышеописанная команда export работает в ОС *nix и не работает в Windows.
+
+Контроль формата вывода лога
+
+Сообщения лога в дополнение к тэгу и приоритету содержат несколько полей метаданных. Можно изменять формат вывода сообщений показывая только конкретные поля метаданных. Для этого используется параметр -v и указывается один из ниже перечисленных форматов вывода.
+
+brief Показывать приоритет/тэг и PID процесса (формат по умолчанию).
+process Показывать только PID.
+tag Показывать только приоритет/тэг.
+thread Показывать только процесс:поток и приоритет/тэг.
+raw Показать необработанное сообщение, без полей метаданных.
+time Показывать дату, время вызова, приоритет/тэг и PID процесса.
+long Показывать все поля метаданных и отдельно сообщения с пустыми строками.
+
+При запуске logcat можно указать формат вывода используя параметр -v:
+adb logcat [-v <format>]
+Пример, который показывает сообщения в формате thread:
+adb logcat -v thread
+Нужно отметить, что можно использовать только один формат с параметром -v.
+
+Просмотр альтернативного буфера лога
+
+Система логов Android держит несколько кольцевых буферов для лога сообщений и не все сообщения отправляются в основной буфер. Для отображения дополнительных сообщений лога нужно запустить logcat с параметром -b.
+
+Таким образом можно посмотреть один из альтернативных буферов:
+radio Просмотр буфера с сообщениями связанными с радио/телефоном.
+events Просмотр буфера с сообщениями связанными с событиями.
+main Просмотр основного буфера (по умолчанию).
+
+Пример ниже показывает буфер с радио и телефонными сообщениями:
+adb logcat -b radio
+
+Просмотр stdout и stderr
+
+По умолчанию система Android шлет вывод stdout и stderr (System.out и System.err) в /dev/null (удаляет). В процессах, которые выполняются в виртуальной машине Dalvik (Dalvik VM) может осуществляться запись копии вывода в лог файл. В этом случае система записывает сообщения в лог используя тэги stdout и stderr с приоритетом I.
+Для перенаправления вывода нужно остановить эмулятор/устройство, затем выполнить команду shell setprop для включения перенаправления вывода. Пример того как это делается:
+$ adb shell stop
+$ adb shell setprop log.redirect-stdio true
+$ adb shell start
+Система сохраняет эту настройку, пока работает эмулятор/устройство. Чтобы использовать эту настройку по умолчанию в эмуляторе/устройстве, нужно добавить эту команду в /data/local.prop в эмуляторе/устройстве.
+
+Список параметров команды logcat
+-b <buffer> Загрузить альтернативный буфер лога для просмотра, такой как event или radio. Основной буфер используется по умолчанию.
+-c Очистить (сбросить) лог и выйти.
+-d Вывести лог на экран и выйти.
+-f <filename> Записать сообщения лога в файл <filename>. По умолчанию в stdout.
+-g Вывести размер указанного буфера лога и выйти.
+-n <count> Установить максимальное количество ротаций лога (количество хранимых сжатых фрагментов лога) <count>. По умолчанию 4. Требует параметр -r.
+-r <kbytes> Выполнять ротацию каждые <kbytes> вывода (разделять лог на фрагменты по <kbytes>). По умолчанию 16. Требует параметр -f.
+-s Устанавливает silent фильтром по умолчанию.
+-v <format> Устанавливает формат вывода сообщений лога. По умолчанию brief.
+
+Команды FastBoot
+
+Приложения которые можно найти в прошивке.
+
+Неполный список приложений:
+
+
+Полезные скрипты.
+
+Создаем в папке с ADB файл с расширением .cmd или .bat (проверяем что .cmd или .bat это расширение файла а не его имя) и пишем туда:
+Удаление системных приложений.
+adb remount
+
+@rem HTC Hub
+adb shell rm /system/app/HtcDirect.apk
+adb shell rm /system/app/HtcDirect.odex
+
+@rem Пиндосские социалки
+adb shell rm /system/app/com.htc.idlescreen_SN.apk
+adb shell rm /system/app/com.htc.idlescreen_SN.odex
+adb shell rm /system/app/Facebook.apk
+adb shell rm /system/app/Facebook.odex
+adb shell rm /system/app/com.htc.FriendStream3DWidget.apk
+adb shell rm /system/app/com.htc.FriendStream3DWidget.odex
+adb shell rm /system/app/Flickr.apk
+adb shell rm /system/app/Flickr.odex
+adb shell rm /system/app/teeter.apk
+adb shell rm /system/app/teeter.odex
+adb shell rm /system/app/com.htc.Twitter3DWidget.apk
+adb shell rm /system/app/com.htc.Twitter3DWidget.odex
+adb shell rm /system/app/Twitter.apk
+adb shell rm /system/app/Twitter.odex
+adb shell rm /system/app/HtcTwitter.apk
+adb shell rm /system/app/HtcTwitter.odex
+adb shell rm /system/app/HtcRecommends.apk
+adb shell rm /system/app/HtcRecommends.odex
+adb shell rm /system/app/HtcRecommendsWidget.apk
+adb shell rm /system/app/HtcRecommendsWidget.odex
+adb shell rm /system/app/HtcFacebook.apk
+adb shell rm /system/app/HtcFacebook.odex
+adb shell rm /system/app/FriendStream.apk
+adb shell rm /system/app/FriendStream.odex
+
+@rem Ролики из Голивуда
+adb shell rm /system/app/htcwatchwidget3d.apk
+adb shell rm /system/app/htcwatchwidget3d.odex
+adb shell rm /system/app/WatchApp.apk
+adb shell rm /system/app/WatchApp.odex
+
+@rem Почта. Использую AndroMail
+adb shell rm /system/app/htcmailwidgets3d.apk
+adb shell rm /system/app/htcmailwidgets3d.odex
+adb shell rm /system/app/Mail.apk
+adb shell rm /system/app/Mail.odex
+adb shell rm /system/app/Gmail.apk
+adb shell rm /system/app/Gmail.odex
+
+@rem Акции
+adb shell rm /system/app/com.htc.TrendsWidget.apk
+adb shell rm /system/app/com.htc.TrendsWidget.odex
+adb shell rm /system/app/Stock.apk
+adb shell rm /system/app/Stock.odex
+adb shell rm /system/app/IdleScreen_Stock.apk
+adb shell rm /system/app/IdleScreen_Stock.odex
+adb shell rm /system/app/FusionStockWidget.apk
+adb shell rm /system/app/FusionStockWidget.odex
+adb shell rm /system/app/DCSStock.apk
+adb shell rm /system/app/DCSStock.odex
+
+@rem Музыка. Использую Meridian Player
+adb shell rm /system/app/com.htc.MusicWidget.apk
+adb shell rm /system/app/com.htc.MusicWidget.odex
+adb shell rm /system/app/HtcStreamPlayer.apk
+adb shell rm /system/app/HtcStreamPlayer.odex
+
+@rem Мировые часы
+adb shell rm /system/app/WorldClock.apk
+adb shell rm /system/app/WorldClock.odex
+
+@rem Слежение, Карты, Улицы, Путешествия, Отпечатки на карте, Навигация. Использую Навител.
+adb shell rm /system/app/HtcLaputa.apk
+adb shell rm /system/app/HtcLaputa.odex
+adb shell rm /system/app/HtcLaputaInstaller.apk
+adb shell rm /system/app/HtcLaputaInstaller.odex
+adb shell rm /system/app/TripWidget3D.apk
+adb shell rm /system/app/TripWidget3D.odex
+adb shell rm /system/app/Street.apk
+adb shell rm /system/app/Street.odex
+adb shell rm /system/app/NetworkLocation.apk
+adb shell rm /system/app/NetworkLocation.odex
+adb shell rm /system/app/Maps.apk
+adb shell rm /system/app/Maps.odex
+adb shell rm /system/app/HtcLocationPicker.apk
+adb shell rm /system/app/HtcLocationPicker.odex
+adb shell rm /system/app/HtcLocationService.apk
+adb shell rm /system/app/HtcLocationService.odex
+adb shell rm /system/app/HtcLocationsWidget3d.apk
+adb shell rm /system/app/HtcLocationsWidget3d.odex
+adb shell rm /system/app/HtcLocationsWidgetSettings3d.apk
+adb shell rm /system/app/HtcLocationsWidgetSettings3d.odex
+adb shell rm /system/app/HtcNavigateWidget3d.apk
+adb shell rm /system/app/HtcNavigateWidget3d.odex
+
+@rem Синхронизация непонятно чего
+adb shell rm /system/app/MyHTC.apk
+adb shell rm /system/app/MyHTC.odex
+adb shell rm /system/app/HtcHubSyncProvider.apk
+adb shell rm /system/app/HtcHubSyncProvider.odex
+
+@rem Убогая читалка. Юзаем MoonReader
+adb shell rm /system/app/EReader.apk
+adb shell rm /system/app/EReader.odex
+adb shell rm /system/app/MyShelf_Widget.apk
+adb shell rm /system/app/MyShelf_Widget.odex
+
+@rem GoogleTalk
+adb shell rm /system/app/Talk2.apk
+adb shell rm /system/app/Talk2.odex
+
+@rem Неудобный виджет СМС сообщений
+adb shell rm /system/app/com.htc.htcmsgwidgets3d.apk
+adb shell rm /system/app/com.htc.htcmsgwidgets3d.odex
+
+@rem Обои
+adb shell rm /system/app/MagicSmokeWallpapers.apk
+adb shell rm /system/app/MagicSmokeWallpapers.odex
+adb shell rm /system/app/VisualizationWallpapers.apk
+adb shell rm /system/app/VisualizationWallpapers.odex
+
+@rem Погода. Использую Gismeteo
+adb shell rm /system/app/Weather.apk
+adb shell rm /system/app/Weather.odex
+adb shell rm /system/app/WeatherAgentService.apk
+adb shell rm /system/app/WeatherAgentService.odex
+adb shell rm /system/app/WeatherLiveWallpaper.apk
+adb shell rm /system/app/WeatherLiveWallpaper.odex
+adb shell rm /system/app/WeatherProvider.apk
+adb shell rm /system/app/WeatherProvider.odex
+adb shell rm /system/app/WeatherSyncProvider.apk
+adb shell rm /system/app/WeatherSyncProvider.odex
+adb shell rm /system/app/IdleScreen_Weather.apk
+adb shell rm /system/app/IdleScreen_Weather.odex
+adb shell rm /system/app/HtcWeather3DWidget.apk
+adb shell rm /system/app/HtcWeather3DWidget.odex
+adb shell rm /system/app/HtcWeatherWallpaper.apk
+adb shell rm /system/app/HtcWeatherWallpaper.odex
+
+@rem Виджет фоток
+adb shell rm /system/app/HtcPhotoGridWidget3D.apk
+adb shell rm /system/app/HtcPhotoGridWidget3D.odex
+adb shell rm /system/app/HtcPhotoWidget.apk
+adb shell rm /system/app/HtcPhotoWidget.odex
+
+@rem Перезагружаем тело
+adb reboot
+
+Остановка службы ADB.
+
+Прошивка радио.
+
+Восстановление прошивки из бэкапа.
+@echo off
+fastboot reboot-bootloader
+echo После загрузки bootloader нажмите любую клавишу...
+pause
+fastboot flash userdata data.img
+fastboot flash system system.img
+fastboot flash boot boot.img
+fastboot reboot
+
+Прошивка анимации при загрузке
+Качаем бутанимацию. Переименовываем файл в bootanimation.zip и кладем его в папку ADB.
+@echo off
+adb remount
+adb push bootanimation.zip /data/local
+
+Получение SuperCID (Дебрендинг
+@echo off
+adb devices
+fastboot reboot-bootloader
+echo После загрузки bootloader нажмите любую клавишу...
+pause
+fastboot oem writecid 11111111
+fastboot reboot-bootloader
+fastboot getvar cid
+fastboot reboot
+
+Прошивка рекавери.
+Распаковываем образ рекавери. Переименовываем файл в recovery.img и кладем его в папку с ADB.
+@echo off
+fastboot reboot-bootloader
+echo После загрузки bootloader нажмите любую клавишу...
+pause
+fastboot flash recovery recovery.img
+fastboot reboot
+
+Прошивка загрузочного раздела.
+
+
+Скачать: Android SDK platform-tools (adb, fastboot) и usb-driver
+Старые версии
+
+
+Надеюсь это многим будет полезным :happy:
+
+Несколько слов о режимах работы телефона: ADB и все что с помощью него можно сделать (Пост #23185719)

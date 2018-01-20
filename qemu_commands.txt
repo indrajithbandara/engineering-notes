@@ -1,0 +1,1 @@
+qemu-system-mips -nodefaults -nographic -kernel /home/user/qemu/vmlinux -serial stdio -hda debian-jessie-mips.ext2 -append "root=/dev/sda
