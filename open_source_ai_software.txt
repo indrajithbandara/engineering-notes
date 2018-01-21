@@ -1,0 +1,22 @@
+Как всегда приветсвую советы от знатоков, помощь в изучении.
+Желающие могут также установить какю-либо из упомянутых программ (или родственных) и изучать/тестировать.
+
+
+1. http://pybrain.org/
+2. http://scikit-learn.org/dev/modules/classes.html#modu
+3. http://leenissen.dk/fann/wp/
+4. http://opennn.net/
+
+
+По возможности ознакомится с:
+
+
+https://www.tensorflow.org/
+https://keras.io/
+http://singa.incubator.apache.org/en/index.html
+https://deeplearning4j.org/
+https://www.microsoft.com/en-us/research/product/cogn..
+http://torch.ch/
+https://github.com/PaddlePaddle/Paddle
+http://caffe2.ai/
+

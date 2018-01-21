@@ -1,0 +1,265 @@
+monit — наблюдатель за системными процессамиТеория
+Monit — самостоятельный демон, работающий от пользователя root. Демон работает на Linux, Free/Net/OpenBSD, SUN Solaris и некоторых других UNIX-системах. Это OpenSource проект, у которого есть «старший брат» — коммерческий проект MMonit. Последний обладает более широким функционалом в вопросе массового мониторинга, межсетевого взаимодействия и составления отчетов. Идея авторов проста — для одиночного сервера используем Monit, для большой сетевой фермы — MMonit.
+В зависимости от настроек, демон может проверять:
+Существование процесса по PID
+Работу определенного порта (TCP/UDP)
+Ответ определенного протокола по определенному порту (SMTP, SSH, HTTP...)
+Ресурсы, занимаемые процессом (CPU time/RAM)
+MD5 checksum
+Объем и свободное пространство в файловой системе
+Количество активных (и суммарное) i-node-в
+Права доступа к файлу или каталогу
+Никто не запрещает комбинировать различные методы проверки. Для одного объекта проверки (тесты) зависят друг от друга, то есть сначала проводится тест1, если он прошел без ошибок — тест2, затем — тест3 и т.д.
+В случае, если какой-то тест не пройден, monit может:
+Остановить, стартовать или перезапустить демона
+Подождать определенное время
+Уведомить админа (почтовым сообщением)
+Примонтировать, отмонтировать или перемонтировать файловую систему
+Запустить отдельный скрипт (заранее написаный админом), причем передать ему определенные параметры (имя процеса/текст ошибки и т.д.)
+Действия также никто не запрещает комбинировать, например:
+Если HTTPd занимает более 200 мегабайт — ждать минуту, если ничего не изменилось — перезапустить сервис, если это также не помогло — прождать пять минут. Если и это не помогло — остановить сервис и уведомить админа письмом.
+И еще. У Monit есть собственный http-сервер. Злоупотреблять им не стоит, так как работает он с рутовыми привилегиями, но иметь доступ к веб-консоли может быть крайне полезным. Вебсервер будет рассмотрен отдельно, в этой же статье.
+Установка и настройка
+Монит есть практически во всех широко распространенных дистрибутивах. В Debian, CentOS и Suse он так и называется. Во FreeBSD лежит в PORTS/sysmgmt/monit. Ставится он стандартным для операционной системы способом, и я не буду на этом подробно останавливаться.
+Результатом установки будет собственно демон (monit) и файл конфигурации, который живет тут:
+# Linux, Solaris:
+ /etc/monit/monitrc
+# FreeBSD/OpenBSD/NetBSD
+ /usr/local/etc/monitrc
+
+
+Конфиг очень подробно документирован, его рекомендуется почитать. Там есть подробные примеры и вообще много чего интересного. В принципе большую часть дефолтных настроек можно не трогать, ограничившись только необходимыми изменениями:
+# процесс работает как демон, цикл проверки - 120 секунд.
+# длительность цикла можно менять, это основная единица времени для monit. 
+# Раз в цикл срабатывают проверки и выполняются команды от админа, присланные через веб-интерфейс
+set daemon 120
+# сервера, через которые пойдет почтовое уведомление. Можно делать несколько, очередность срабатывания повторяет очередность внесения
+set mailserver mail.zooclub.ru 10025,
+    localhost
+# кто получит уведомление?
+set alert sysadmin@zooclub.ru
+
+
+Информацию о том, что monit должен проверять, можно хранить и в отдельном файле (файлах), которые подключаются в основной конфиг командой include:
+# один файл
+include /etc/devel/monitcheck.monitconf
+# все файлы с расширением из папки.
+include /etc/stable/monit/*
+
+
+Мне кажется, что удобнее хранить проверку каждого сервиса в отдельном файле — это облегчает отладку и упрощает администрирование.
+Мониторим состояние сервера в целом:
+ check system ws1.zooclub.ru
+    if loadavg (1min) > 4 then alert
+    if loadavg (5min) > 2 then alert
+    if memory usage > 75% then alert
+    if cpu usage (user) > 90% then alert
+    if cpu usage (system) > 40% then alert
+    if cpu usage (wait) > 20% then alert
+
+
+Файловые системы:
+# /etc/stable/monit/filesystem.conf
+
+# проверяем устройство по точке монтирования. 
+#  Можно проверять диски напрямую (/dev/hda), но с LVM и прочими логическими "дисками" этот фокус не прокатит, 
+#  их проверять можно только по точке монтирования и никак иначе.
+check device homefs with path /home
+        start program  = "/bin/mount /home"
+        stop program  = "/bin/umount /home"
+        if failed permission 755 then alert
+        if failed uid root then alert
+#  Если места остается меньше 20% минимум пять проверок за последние 15 - бить в набат и больше ничего не делать.
+# При любой своей активности monit будет предупреждать админа письмом.
+        if space usage > 80% for 5 times within 15 cycles then alert
+#  Место кончилось, отмонтировать файлсистему
+        if space usage > 99% then stop
+# аналогично про i-nodes.
+        if inode usage > 80% then alert
+        if inode usage > 99% then stop
+        group server
+
+check device rootfs with path /
+        start program  = "/bin/mount /"
+# Потерять / во время работы сервера - безрадостная перспектива. По этому если дело плохо - просто перемонтируем его в read-only
+        stop program  = "/bin/mount -o remount,ro /"
+        if failed permission 755 then unmonitor
+        if failed uid root then unmonitor
+        if space usage > 80% for 5 times within 15 cycles then alert
+        if space usage > 99% then stop
+        if inode usage > 80% then alert
+        if inode usage > 99% then stop
+        group server
+
+check device bootfs with path /boot
+         start program  = "/bin/mount /boot"
+        stop program  = "/bin/mount -o remount,ro /boot"
+#  эта конструкция "отключит" тестирование файлсистемы, если права на папку - не 755
+        if failed permission 755 then unmonitor
+        if failed uid root then unmonitor
+        if space usage > 80% for 5 times within 15 cycles then alert
+        if space usage > 99% then stop
+        if inode usage > 80% then alert
+        if inode usage > 99% then stop
+        group server
+
+
+Теперь проверим работу веб-сервера apache:
+# /etc/stable/monit/apache.conf
+# проверка файла (размер, права доступа и тп):
+check file apache_bin with path /usr/local/apache/bin/httpd
+        if failed checksum and
+# sum - это стандартный md5-хэш. Его можно получить, натравив программу md5sum на нужный файл
+                expect the sum 8f7f419955cefa0b33a2ba316cba3659 then unmonitor
+        if failed permission 755 then unmonitor
+        if failed uid root then unmonitor
+        if failed gid root then unmonitor
+# отдельное письмо на отдельный адрес и с отдельным содержимым. 
+        alert security@zooclub.ru on {
+                checksum, permission, uid, gid, unmonitor
+                } with the mail-format { subject: Alarm! }
+        group server
+
+# проверка процесса осуществляется по pid-файлу. Путь к pid-файлу всегда абсолютный
+check process apache with pidfile /var/run/apache2.pid
+        start program = "/etc/init.d/apache2 start"
+        stop program  = "/etc/init.d/apache2 stop"
+        if cpu > 60% for 2 cycles then alert
+# если вебсервер сожрал 80% процессрного времени и не отдает его пять циклов проверки подряд - рестартуем его
+         if cpu > 80% for 5 cycles then restart
+# аналогично по суммарной памяти, которую он поглотил.
+        if totalmem > 500.0 MB for 5 cycles then restart
+        if children > 250 then restart
+# если load average сервера за 5 минут больше 10 8 циклов подряд - вырубаем.
+        if loadavg(5min) greater than 10 for 8 cycles then stop
+# вот тут самое интересное - многоэтапная проверка:
+# первый шаг - подключение на 80 порт, протокол http
+        if failed host 127.0.0.1 port 80 protocol http
+# если получилось - запрашиваем файл /index.html
+                and request "/index.html"
+                with timeout 15 seconds
+# а если что-то из цепочки не получилось - рестартуем демон
+                then restart
+# проверка HTTP-SSL. Монит отдельно рассматривает SSL, и отдельно - защищаемый протокол.
+# Для того, чтобы иметь возможность проводить такие проверки, нужно собрать monit с поддержкой SSL. 
+# Любители FreeBSD - будьте внимательны при сборке!
+# По умолчанию он долежен собратся с поддержкой SSL, но если вы ее отключили - будет ошибка
+        if failed port 443 type tcpssl protocol http
+                and request "/test.html"
+                with timeout 15 seconds
+                then restart
+# если за последние пять циклов проверки было три рестарта или больше - пропускаем один цикл проверки.
+        if 3 restarts within 5 cycles then timeout
+# проверку имеет смысл проводить только, если пройдена первая проверка (которая права доступа и проч). 
+# В противном случае все тесты безсмысленны.
+        depends on apache_bin
+        group server
+
+
+OpenSSHD:
+check process sshd with pidfile /var/run/sshd.pid
+        start program "/etc/init.d/ssh start"
+        stop program "/etc/init.d/ssh stop"
+        if failed port 22 protocol ssh then restart
+        if 5 restarts within 5 cycles then timeout
+        group server
+
+
+OpenVPN. Проверяем только наличие процесса:
+check process openvpn with pidfile /var/run/openvpn.link1.pid
+   group system
+   start program = "/etc/init.d/openvpn start"
+   stop  program = "/etc/init.d/openvpn stop"
+   if 5 restarts within 5 cycles then timeout
+
+
+PostgreSQL. Проверяем доступность через TCP-порт и сокет
+check process postgres with pidfile /var/run/postgresql/main.pid
+        group database
+        start program = "/etc/init.d/postgresql start"
+        stop  program = "/etc/init.d/postgresql stop"
+        if failed unixsocket /var/run/postgresql/.s.PGSQL.5432 protocol pgsql then restart
+        if failed host 127.0.0.1 port 5432 protocol pgsql then restart
+        if 5 restarts within 5 cycles then timeout
+    group database
+
+
+Исчерпывающий список протоколов и вариантов проверки можно почерпнуть в документации. Правда, она на англ языке.
+Веб-морда
+Как я уже писал во вступлении, у monit есть небольшая, но довольно полезная вебморда.
+Пример настройки:
+# включить веб-интерфейс на определенный порт
+set httpd port 10001 and
+# включить SSL
+        ssl enable
+# где взять pem-файл. Нужен для ssl, подробно ниже
+        pemfile /etc/monit/monit.pem
+# на каком адресе (интерфейсе) слушать.
+# если адрес не указать - слушать будет на всех
+        use address 10.10.10.21
+# разрешить доступ только с определенных адресов
+# строго рекомендуется!
+        allow 10.10.10.22/32
+        allow 10.10.12.0/24
+# разрешить доступ только знающим пароль.
+# пароль, к сожалению, хранится в открытом виде
+        allow senegami:aoLouch0aingahce
+        allow logan:Jefae2Othaitae1S
+
+
+Теперь о pem-файле. Веб-сервер monit довольно примитивный, и ему нужно иметь ssl сертификат, ключ от него и DH-файл в одном объекте. Собственно, он и называется pem-файлом. Готовится следующим образом. Сначала создадим шаблон для сертификата:
+----- BEGIN:monit.cnf -----
+#  create RSA certs - Server
+
+RANDFILE = ./openssl.rnd
+
+[ req ]
+default_bits = 1024
+encrypt_key = yes
+distinguished_name = req_dn
+x509_extensions = cert_type
+
+[ req_dn ]
+countryName = Country Name (2 letter code)
+countryName_default = RU
+
+stateOrProvinceName = State or Province Name (full name)
+stateOrProvinceName_default = NorthWest
+
+localityName= Locality Name (eg, city)
+localityName_default= Saint Petersburg
+
+organizationName= Organization Name (eg, company)
+organizationName_default= AnyOne LLC
+
+organizationalUnitName= Organizational Unit Name (eg, section)
+organizationalUnitName_default= Net
+
+commonName= Common Name (FQDN of your server)
+commonName_default= ws1.zooclub.ru
+
+emailAddress= Email Address
+emailAddress_default= security@zooclub.ru
+
+[ cert_type ]
+nsCertType = server
+----- END:monit.cnf -----
+
+
+Разумеется, нужно поменять значения под необходимые конкретно вам
+Затем соберем из шаблона сертификат:
+openssl req -new -x509 -days 720 -nodes \
+-config ./monit.cnf -out /etc/monit/monit.pem \
+-keyout /var/certs/monit.pem
+
+# Генерируем число Диффи-Хеллмана и прячем его в тот же файл
+openssl gendh 512 >> /etc/monit/monit.pem
+
+# проверяем читаемость сертификата
+openssl x509 -subject -dates -fingerprint -noout -in /etc/monit/monit.pem
+
+# Поскольку в файле лежит серкретный ключ сертификата - уменьшим права доступа
+chmod 400 /etc/monit/monit.pem
+
+
+После чего перезапускаем монит и любуемся :)

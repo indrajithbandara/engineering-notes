@@ -1,0 +1,44 @@
+Сборка ядра Linux
+Сборка initrd
+Загрузка с EFI
+Systemd
+Iptables
+BPF
+SystemTap
+Dtrace
+Настройка терминала в Linux
+Настройка locale в Linux
+Bash scripting
+Nginx
+Apache
+Docker
+Docker Swarm
+Kubernate
+Ansible
+Unbound
+Bind
+Postfix
+Peacemaker
+Postgresql
+MySQL
+DRDB
+GlusterFS
+Ceph
+Lustre
+Tmux
+Screen
+Expect
+Asterisk
+Kibana
+Zabbix
+Graphana
+Cacti
+Nagios
+Git
+StrongSwan
+Vim
+Memcashed
+MongoDB
+Redis
+AnsibleTower
+

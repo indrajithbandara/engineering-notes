@@ -1,0 +1,64 @@
+
+firewall-cmd --permanent --add-masquerade
+firewall-cmd --permanent --add-forward-port=port=587:addr=10.200.80.0/23:toport=587:toaddr=10.200.2.41:proto=tcp
+firewalld-cmd --reload
+
+======================================================================== 
+
+HELO 10.20.21.48
+mail from:<username>
+RCPT TO:<username2>
+Subject: test
+data
+test
+.
+Quit
+
+========================================================================
+
+engine-iso-uploader -i DC1_NFS_ISO upload rhel-server-7.2-x86_64-dvd.iso
+
+
+========================================================================
+
+svn co https://svn.localhost.localdomain/tags/6.9/Documentation/ --username <username>
+
+========================================================================
+
+cat /var/log/audit/audit.log | grep zabbix_agentd | grep denied | audit2allow -M 
+
+========================================================================
+
+current_date_y=`date +"%b %d %H:%M:%S %Y %Z" --utc|cut -c 17-21`
+current_date_m=`date +"%b %d %H:%M:%S %Y %Z" --utc|cut -c -4`
+current_date_d=`date +"%b %d %H:%M:%S %Y %Z" --utc|cut -c 5-6`
+cert_date_y=`openssl s_client -connect localhost:443 2>/dev/null|sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p'|openssl x509 -subject -noout -dates 2>/dev/null|grep After| cut -c 26-30`
+cert_date_m=`openssl s_client -connect localhost:443 2>/dev/null|sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p'|openssl x509 -subject -noout -dates 2>/dev/null|grep After|cut -c 10-13`
+cert_date_d=`openssl s_client -connect localhost:443 2>/dev/null|sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p'|openssl x509 -subject -noout -dates 2>/dev/null|grep After|cut -c 14-16`
+
+keytool -list -v -keystore $WLSDOMAIN/certs/appTrustKeyStore.jks -storepass <<password>> | egrep "Alias|Valid"
+
+========================================================================
+
+openssl s_client -connect localhost:443 2>/dev/null
+
+========================================================================
+
+keytool -list -v -keystore $WLSDOMAIN/certs/appTrustKeyStore.jks -storepass <<password>>
+
+
+keytool -import -trustcacerts -alias gate-web-arm -file ./gate-web-arm.tsed.orglot.office.pem  -destkeystore keystore  -deststorepass P@ssw0rd -destkeypass P@ssw0rd
+
+========================================================================
+
+
+semanage permissive -a zabbix_agent_t
+
+cat /var/log/audit/audit.log | grep zabbix_agentd | grep denied | audit2allow -M
+
+========================================================================
+
+export ANSIBLE_HOST_KEY_CHECKING=False
+
+
+========================================================================

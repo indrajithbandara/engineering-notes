@@ -1,0 +1,45 @@
+Си        http://www.open-std.org/jtc1/sc22/wg14/
+C++        https://isocpp.org/
+C--        http://www.cs.tufts.edu/~nr/c--/index.html
+JavaScript    https://developer.mozilla.org/fr/docs/Web/JavaScript
+Java        https://java.com/ru/
+Ceylon        https://ceylon-lang.org/
+C#        https://www.microsoft.com/net
+Kotlin        http://kotlinlang.org/
+Ада        http://www.adaic.org/
+Rust        https://www.rust-lang.org/ru-RU/
+Go        https://golang.org/
+Objective-C    https://developer.apple.com/library/content/navigation/
+Swift        https://swift.org/
+ECMAScript    http://www.ecma-international.org/
+TypeScript    http://www.typescriptlang.org/
+Dart        https://www.dartlang.org/
+Python        https://www.python.org/
+PHP        https://www.php.net/
+Perl        https://www.perl.org/
+Ruby        https://www.ruby-lang.org/ru/
+Bash        http://www.gnu.org/software/bash/
+Powershell    https://msdn.microsoft.com/en-us/powershell
+REXX        https://www-01.ibm.com/software/awdtools/rexx/
+JCL        
+Lisp        https://common-lisp.net/
+Haskell    https://www.haskell.org/
+Clojure        https://clojure.org/
+Scala        http://www.scala-lang.org/
+Scheme    http://www.scheme-reports.org/
+Lua        http://www.lua.org/
+Tcl        http://www.tcl.tk/
+Erlang        https://www.erlang.org/
+Elixir        https://elixir-lang.org/
+Forth
+Nim        https://nim-lang.org/
+SmalTalk    http://smalltalk.org/
+Julia        https://julialang.org/
+Red        http://www.red-lang.org
+Rebol        http://www.rebol.com
+
+Ansible    https://www.ansible.com/
+Chef        https://www.chef.io/chef/
+Puppet        https://puppet.com/
+SaltStack    https://saltstack.com/
+
